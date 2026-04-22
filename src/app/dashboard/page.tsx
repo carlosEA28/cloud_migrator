@@ -1,10 +1,11 @@
 "use client"
 
-import { usePathname } from "next/navigation"
-import { DashboardSidebar } from "@/components/dashboard-sidebar"
+import { NoTransferCardComponent } from "@/app/dashboard/components/NoTransferCardComponent";
 
 export default function DashboardPage() {
-  const pathname = usePathname()
-
-  return <DashboardSidebar activePath={pathname} />
+  return (
+      <div className="flex-1 flex items-center justify-center p-4">
+        <NoTransferCardComponent />
+      </div>
+  )
 }
