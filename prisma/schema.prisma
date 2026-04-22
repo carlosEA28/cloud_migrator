@@ -1,0 +1,179 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String            @id
+  name             String
+  email            String            @unique
+  emailVerified    Boolean           @default(false)
+  image            String?
+  createdAt        DateTime
+  updatedAt        DateTime
+  sessions         Session[]
+  accounts         Account[]
+  oauthConnections OAuthConnection[]
+  transferSessions TransferSession[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  userId    String
+  createdAt DateTime
+  updatedAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime
+  updatedAt             DateTime
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime
+  updatedAt  DateTime
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model OAuthConnection {
+  id                     String            @id @default(uuid()) @db.Uuid
+  userId                 String
+  provider               OAuthProvider
+  accessToken            String
+  refreshToken           String
+  tokenExpiresAt         DateTime
+  scope                  String
+  isActive               Boolean           @default(true)
+  user                   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceTransferSessions TransferSession[] @relation("SourceConnection")
+  destTransferSessions   TransferSession[] @relation("DestinationConnection")
+
+  @@unique([userId, provider])
+  @@index([userId])
+  @@map("oauth_connection")
+}
+
+model TransferSession {
+  id               String                @id @default(uuid()) @db.Uuid
+  userId           String
+  sourceConnId     String                @db.Uuid
+  destConnId       String                @db.Uuid
+  status           TransferSessionStatus
+  totalFiles       Int
+  completedFiles   Int
+  failedFiles      Int
+  totalBytes       BigInt
+  transferredBytes BigInt
+  startedAt        DateTime?
+  completedAt      DateTime?
+  user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceConnection OAuthConnection       @relation("SourceConnection", fields: [sourceConnId], references: [id])
+  destConnection   OAuthConnection       @relation("DestinationConnection", fields: [destConnId], references: [id])
+  files            FileTransfer[]
+
+  @@index([userId])
+  @@index([sourceConnId])
+  @@index([destConnId])
+  @@map("transfer_session")
+}
+
+model FileTransfer {
+  id            String             @id @default(uuid()) @db.Uuid
+  sessionId     String             @db.Uuid
+  sourceFileId  String
+  sourcePath    String
+  fileName      String
+  fileSizeBytes BigInt
+  mimeType      String?
+  checksum      String?
+  status        FileTransferStatus
+  retryCount    Int                @default(0)
+  maxRetries    Int                @default(3)
+  lastError     String?
+  bullJobId     String?
+  completedAt   DateTime?
+  session       TransferSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  logs          TransferLog[]
+
+  @@index([sessionId])
+  @@index([status])
+  @@map("file_transfer")
+}
+
+model TransferLog {
+  id             String           @id @default(uuid()) @db.Uuid
+  fileTransferId String           @db.Uuid
+  level          TransferLogLevel
+  message        String
+  metadata       Json?
+  occurredAt     DateTime
+  fileTransfer   FileTransfer     @relation(fields: [fileTransferId], references: [id], onDelete: Cascade)
+
+  @@index([fileTransferId])
+  @@index([occurredAt])
+  @@map("transfer_log")
+}
+
+enum OAuthProvider {
+  GOOGLE_DRIVE
+  ONEDRIVE
+  DROPBOX
+}
+
+enum TransferSessionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum FileTransferStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+enum TransferLogLevel {
+  INFO
+  WARN
+  ERROR
+}
