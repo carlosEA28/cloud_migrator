@@ -1,107 +1,208 @@
 "use client"
 
+import { zodResolver } from "@hookform/resolvers/zod"
 import Image from "next/image"
-import { ArrowRight } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { ArrowRight, LoaderCircle } from "lucide-react"
+import { useState } from "react"
+import { Controller, useForm } from "react-hook-form"
+import { toast } from "sonner"
+import { z } from "zod"
 
+import { authClient } from "@/lib/auth_client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 import logo from "../../../../../public/Icon.svg"
 
+const formSchema = z.object({
+  email: z
+    .string()
+    .min(1, "O campo email e obrigatorio.")
+    .email("Email invalido."),
+  secureKey: z.string().min(8, "A senha deve conter no minimo 8 caracteres."),
+})
+
+type SignInFormValues = z.infer<typeof formSchema>
+
 export function SignInFormComponent() {
-    return (
-        <div className="w-full max-w-[448px] px-4">
-            <div className="mb-6 text-center">
-                <div className="mb-3 flex items-center justify-center gap-2 text-[12px] uppercase tracking-[0.24em] text-[#15e6c2]">
-                    <Image src={logo} alt="Cloud Migrator logo" width={22} height={18} />
-                    <span className="whitespace-nowrap">Cloud Migrator</span>
-                </div>
-                <h1 className="text-[24px] leading-[1.03] font-medium text-[#e8ecf2] md:text-[42px]">
-                    Authenticate Access Node
-                </h1>
-                <p className="mt-3.5 font-mono text-[12px] tracking-[0.08em] text-[#8b95a6]">
-                    Validate credentials to initialize secure session.
-                </p>
-            </div>
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
-            <Card className="rounded-none border border-[#2b3140] bg-[#171b24] py-0 text-[#d5dbe4] ring-0 shadow-[0_18px_45px_rgba(0,0,0,0.5)]">
-                <CardContent className="px-5 pt-5 pb-0 md:px-6 md:pt-6">
-                    <form className="space-y-5">
-                        <FieldGroup className="gap-4">
-                            <Field>
-                                <FieldLabel
-                                    htmlFor="signin-email"
-                                    className="mb-2 font-mono text-[11px] uppercase tracking-[0.16em] text-[#7f899a]"
-                                >
-                                    &gt; email_address
-                                </FieldLabel>
-                                <InputGroup className="!h-11 !rounded-none !border-[#2c3240] !bg-[#1a1f2b] has-[[data-slot=input-group-control]:focus-visible]:!border-[#15e6c2]/70 has-[[data-slot=input-group-control]:focus-visible]:!ring-0">
-                                    <InputGroupInput
-                                        id="signin-email"
-                                        type="email"
-                                        placeholder="admin@system.local"
-                                        autoComplete="email"
-                                        className="!h-11 !px-3 !text-[13px] !text-[#d5dbe4] placeholder:!text-[#586171]"
-                                    />
-                                </InputGroup>
-                            </Field>
+  const form = useForm<SignInFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      secureKey: "",
+    },
+  })
 
-                            <Field>
-                                <FieldLabel
-                                    htmlFor="signin-secure-key"
-                                    className="mb-2 font-mono text-[11px] uppercase tracking-[0.16em] text-[#7f899a]"
-                                >
-                                    &gt; secure_key
-                                </FieldLabel>
-                                <InputGroup className="!h-11 !rounded-none !border-[#2c3240] !bg-[#1a1f2b] has-[[data-slot=input-group-control]:focus-visible]:!border-[#15e6c2]/70 has-[[data-slot=input-group-control]:focus-visible]:!ring-0">
-                                    <InputGroupInput
-                                        id="signin-secure-key"
-                                        type="password"
-                                        placeholder="............"
-                                        autoComplete="current-password"
-                                        className="!h-11 !px-3 !text-[13px] !text-[#d5dbe4] placeholder:!text-[#586171]"
-                                    />
-                                </InputGroup>
-                            </Field>
-                        </FieldGroup>
+  async function onSubmit(values: SignInFormValues) {
+    form.clearErrors()
+    setIsLoading(true)
 
-                        <Button
-                            type="button"
-                            className="!h-11 !w-full !rounded-none !border !border-[#13d8b5]/70 !bg-[#15e6c2] !text-[11px] !font-semibold !uppercase !tracking-[0.18em] !text-[#12292a] hover:!bg-[#1ff5d2] cursor-pointer"
-                        >
-                            execute_login
-                            <ArrowRight className="size-4" />
-                        </Button>
-                    </form>
-                </CardContent>
+    try {
+      const { data } = await authClient.signIn.email({
+        email: values.email.trim().toLowerCase(),
+        password: values.secureKey,
+      })
 
-                <CardFooter className="flex-col items-stretch gap-4 border-t-0 bg-transparent px-5 pt-4 pb-5 md:px-6 md:pb-6">
-                    <div className="flex items-center gap-2">
-                        <span className="h-px flex-1 bg-[#2c3240]" />
-                        <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#7f899a]">
-                            OR_USE_PROVIDER
-                        </span>
-                        <span className="h-px flex-1 bg-[#2c3240]" />
-                    </div>
+      if (data?.user?.id) {
+        router.push("/")
+        return
+      }
 
-                    <Button
-                        type="button"
-                        variant="outline"
-                        className="!h-11 !w-full !rounded-none !border-[#2c3240] !bg-[#1d2230] !text-[11px] !font-medium !uppercase !tracking-[0.14em] !text-[#b5becd] hover:!bg-[#232a3b]"
-                    >
-                        <Image src="/google.svg" alt="Google" width={16} height={16} />
-                        Continue with Google
-                    </Button>
-                </CardFooter>
-            </Card>
+      toast.error("Nao foi possivel concluir o login.")
+    } catch (error) {
+      const errorCode =
+        typeof error === "object" && error !== null && "error" in error
+          ? (error as { error?: { code?: string; message?: string } }).error?.code
+          : undefined
 
-            <p className="mt-8 text-center font-mono text-[12px] uppercase tracking-[0.12em] text-[#7e8899]">
-                NEW_OPERATOR?
-                <span className="ml-2 text-[#15e6c2] underline decoration-[#15e6c2] underline-offset-4">
-                    INITIALIZE_NODE
-                </span>
-            </p>
+      if (errorCode === "INVALID_EMAIL_OR_PASSWORD") {
+        form.setError("email", {
+          type: "manual",
+          message: "Email ou senha invalidos.",
+        })
+        form.setError("secureKey", {
+          type: "manual",
+          message: "Email ou senha invalidos.",
+        })
+        toast.error("Email ou senha invalidos.")
+      } else {
+        const errorMessage =
+          typeof error === "object" && error !== null && "error" in error
+            ? (error as { error?: { message?: string } }).error?.message
+            : undefined
+
+        toast.error(errorMessage || "Erro inesperado.")
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <div className="w-full max-w-[448px] px-4">
+      <div className="mb-6 text-center">
+        <div className="mb-3 flex items-center justify-center gap-2 text-[12px] uppercase tracking-[0.24em] text-[#15e6c2]">
+          <Image src={logo} alt="Cloud Migrator logo" width={22} height={18} />
+          <span className="whitespace-nowrap">Cloud Migrator</span>
         </div>
-    )
+        <h1 className="text-[24px] leading-[1.03] font-medium text-[#e8ecf2] md:text-[42px]">
+          Authenticate Access Node
+        </h1>
+        <p className="mt-3.5 font-mono text-[12px] tracking-[0.08em] text-[#8b95a6]">
+          Validate credentials to initialize secure session.
+        </p>
+      </div>
+
+      <Card className="rounded-none border border-[#2b3140] bg-[#171b24] py-0 text-[#d5dbe4] ring-0 shadow-[0_18px_45px_rgba(0,0,0,0.5)]">
+        <CardContent className="px-5 pt-5 pb-0 md:px-6 md:pt-6">
+          <form
+            id="signin-form"
+            className="space-y-5"
+            onSubmit={form.handleSubmit(onSubmit)}
+          >
+            <FieldGroup className="gap-4">
+              <Controller
+                name="email"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel
+                      htmlFor="signin-email"
+                      className="mb-2 font-mono text-[11px] uppercase tracking-[0.16em] text-[#7f899a]"
+                    >
+                      &gt; email_address
+                    </FieldLabel>
+                    <Input
+                      {...field}
+                      id="signin-email"
+                      type="email"
+                      placeholder="admin@system.local"
+                      autoComplete="email"
+                      aria-invalid={fieldState.invalid}
+                      className="!h-11 !rounded-none !border-[#2c3240] !bg-[#1a1f2b] !px-3 !text-[13px] !text-[#d5dbe4] placeholder:!text-[#586171] focus-visible:!border-[#15e6c2]/70 focus-visible:!ring-0"
+                    />
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
+
+              <Controller
+                name="secureKey"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel
+                      htmlFor="signin-secure-key"
+                      className="mb-2 font-mono text-[11px] uppercase tracking-[0.16em] text-[#7f899a]"
+                    >
+                      &gt; secure_key
+                    </FieldLabel>
+                    <Input
+                      {...field}
+                      id="signin-secure-key"
+                      type="password"
+                      placeholder="............"
+                      autoComplete="current-password"
+                      aria-invalid={fieldState.invalid}
+                      className="!h-11 !rounded-none !border-[#2c3240] !bg-[#1a1f2b] !px-3 !text-[13px] !text-[#d5dbe4] placeholder:!text-[#586171] focus-visible:!border-[#15e6c2]/70 focus-visible:!ring-0"
+                    />
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
+            </FieldGroup>
+
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="!h-11 !w-full !rounded-none !border !border-[#13d8b5]/70 !bg-[#15e6c2] !text-[11px] !font-semibold !uppercase !tracking-[0.18em] !text-[#12292a] hover:!bg-[#1ff5d2]"
+            >
+              {isLoading ? (
+                <>
+                  <LoaderCircle className="size-4 animate-spin" />
+                  executing_login
+                </>
+              ) : (
+                <>
+                  execute_login
+                  <ArrowRight className="size-4" />
+                </>
+              )}
+            </Button>
+          </form>
+        </CardContent>
+
+        <CardFooter className="flex-col items-stretch gap-4 border-t-0 bg-transparent px-5 pt-4 pb-5 md:px-6 md:pb-6">
+          <div className="flex items-center gap-2">
+            <span className="h-px flex-1 bg-[#2c3240]" />
+            <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#7f899a]">
+              OR_USE_PROVIDER
+            </span>
+            <span className="h-px flex-1 bg-[#2c3240]" />
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="!h-11 !w-full !rounded-none !border-[#2c3240] !bg-[#1d2230] !text-[11px] !font-medium !uppercase !tracking-[0.14em] !text-[#b5becd] hover:!bg-[#232a3b]"
+          >
+            <Image src="/google.svg" alt="Google" width={16} height={16} />
+            Continue with Google
+          </Button>
+        </CardFooter>
+      </Card>12345678
+
+      <p className="mt-8 text-center font-mono text-[12px] uppercase tracking-[0.12em] text-[#7e8899]">
+        NEW_OPERATOR?
+        <span className="ml-2 text-[#15e6c2] underline decoration-[#15e6c2] underline-offset-4">
+          INITIALIZE_NODE
+        </span>
+      </p>
+    </div>
+  )
 }
