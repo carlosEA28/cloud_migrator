@@ -3,10 +3,12 @@ import { notFound } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { providerCopyMap, type ProviderKey } from "@/app/dashboard/providers/constants/providerCopy"
-import {connectProvider} from "@/actions/connectProvider";
+import {connectProvider} from "@/actions/connectProvider"
+import { ConnectSuccess } from "../components/ConnectSuccess";
 
 type ConnectPageProps = {
   params: Promise<{ slug: string }> | { slug: string }
+  searchParams: Promise<{ success?: string }>
 }
 
 const titleMap: Record<ProviderKey, string> = {
@@ -21,11 +23,16 @@ function isProviderKey(value: string): value is ProviderKey {
   return value in providerCopyMap
 }
 
-async function Connect({ params }: ConnectPageProps) {
+async function Connect({ params, searchParams }: ConnectPageProps) {
   const { slug } = await Promise.resolve(params)
+  const { success } = await Promise.resolve(searchParams)
 
   if (!isProviderKey(slug)) {
     notFound()
+  }
+
+  if (success === "true") {
+    return <ConnectSuccess providerKey={slug} />
   }
 
   const connectSelectedProvider = connectProvider.bind(null, slug)

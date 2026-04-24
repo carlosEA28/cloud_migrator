@@ -14,7 +14,7 @@ export async function connectProvider(provider: string) {
         headers: await headers(),
         body: {
             provider: providerId,
-            callbackURL: "/dashboard/providers/" + provider
+            callbackURL: "/dashboard/providers/" + provider + "?success=true"
         }
     })
 
