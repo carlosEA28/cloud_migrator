@@ -14,10 +14,12 @@ import {
 import { Home, Link2, Move } from "lucide-react"
 import Image from "next/image"
 import logo from "../../public/Icon.svg"
+import {authClient} from "@/lib/auth_client";
 
 interface DashboardSidebarProps {
   activePath?: string
 }
+
 
 const dashboardNavItems = [
   {
@@ -38,6 +40,10 @@ const dashboardNavItems = [
 ]
 
 export function DashboardSidebar({ activePath = "/" }: DashboardSidebarProps) {
+
+  const user = authClient.useSession()
+
+
   const isActive = (url: string) => {
     if (url === "/dashboard") {
       return activePath === "/dashboard"
@@ -85,11 +91,11 @@ export function DashboardSidebar({ activePath = "/" }: DashboardSidebarProps) {
       <SidebarFooter className="mt-auto border-t border-[#2c3240] p-3 bg-[#111118]">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded bg-[#2c3240] text-xs font-medium text-white">
-            AD
+            {user?.data?.user.name[0].toUpperCase()}
           </div>
           <div className="flex flex-col">
-            <span className="text-xs font-medium text-white">Admin User</span>
-            <span className="text-[10px] text-[#7f899a]">admin@system.local</span>
+            <span className="text-xs font-medium text-white">{user?.data?.user.name}</span>
+            <span className="text-[10px] text-[#7f899a]">{user?.data?.user.email}</span>
           </div>
         </div>
       </SidebarFooter>
