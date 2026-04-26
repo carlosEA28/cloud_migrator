@@ -58,9 +58,9 @@ export function DashboardSidebar({ activePath = "/" }: DashboardSidebarProps) {
           <Image src={logo} alt="Cloud Migrator" width={24} height={20} />
           <span className="text-sm font-semibold text-[#15e6c2]">Cloud Migrator</span>
         </div>
-        <button className="w-full rounded-none bg-[#15e6c2] px-3 py-2 text-xs font-semibold uppercase tracking-wider text-[#12292a] hover:bg-[#1ff5d2]">
+        <a href="/dashboard/transfer" className="text-center w-full rounded-none bg-[#15e6c2] px-3 py-2 text-xs font-semibold uppercase tracking-wider text-[#12292a] hover:bg-[#1ff5d2]">
           + New Migration
-        </button>
+        </a>
       </SidebarHeader>
       <SidebarContent className="bg-[#111118] ">
         <SidebarGroup>

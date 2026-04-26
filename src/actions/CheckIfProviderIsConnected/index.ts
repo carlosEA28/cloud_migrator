@@ -4,6 +4,7 @@ import { headers } from "next/headers"
 import { prisma } from "@/lib/prisma"
 import { getStorageDropbox } from "@/app/api/providers/dropbox"
 import { getStorageGoogle } from "@/app/api/providers/googleDrive"
+import { getValidToken } from "@/helpers/refreshProviderToken"
 import {redis} from "@/lib/redis/redis";
 
 const targetProviders = ["google", "dropbox"]
@@ -14,24 +15,14 @@ export async function checkProvidersStatus() {
     })
     if (!session?.user) throw new Error("User not authenticated")
 
-    // 1 query só
-    const accounts = await prisma.account.findMany({
-        where: {
-            userId: session.user.id,
-            providerId: { in: targetProviders }
-        }
-    })
-
     const providers = await Promise.all(
         targetProviders.map(async (providerId) => {
-            const account = accounts.find(a => a.providerId === providerId)
-            const hasToken = !!account?.accessToken
+            const accessToken = await getValidToken(session.user.id, providerId)
 
-            if (!hasToken || !account?.accessToken) {
+            if (!accessToken) {
                 return { provider: providerId, connected: false, data: null }
             }
 
-            // Checa cache antes de chamar a API
             const cacheKey = `storage:${session.user.id}:${providerId}`
             const cached = await redis.get(cacheKey)
             if (cached) {
@@ -41,9 +32,9 @@ export async function checkProvidersStatus() {
             let data = null
             try {
                 if (providerId === "google") {
-                    data = await getStorageGoogle(account.accessToken)
+                    data = await getStorageGoogle(accessToken)
                 } else if (providerId === "dropbox") {
-                    data = await getStorageDropbox(account.accessToken)
+                    data = await getStorageDropbox(accessToken)
                 }
                 
                 if (data) {
@@ -56,7 +47,7 @@ export async function checkProvidersStatus() {
                 }
             }
 
-            return { provider: providerId, connected: hasToken, data }
+            return { provider: providerId, connected: !!accessToken, data }
         })
     )
 
