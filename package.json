@@ -17,6 +17,7 @@
     "@prisma/client": "^6.19.3",
     "axios": "^1.15.2",
     "better-auth": "^1.6.6",
+    "bullmq": "^5.76.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "googleapis": "^171.4.0",

@@ -3,6 +3,7 @@
 import { CloudOff, PlusCircle } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 interface NoTransferCardComponentProps {
     title?: string
@@ -45,12 +46,14 @@ export function NoTransferCardComponent({
                     </div>
                 </div>
 
-                <Button 
-                    className="w-full bg-[#00FFCC] hover:bg-[#00e6b8] text-black font-bold h-12 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(0,255,204,0.15)]"
-                >
-                    <PlusCircle className="size-5 mr-2" />
-                    INITIALIZE TRANSFER
-                </Button>
+                <Link href="/dashboard/transfer" className="w-full">
+                    <Button
+                        className="w-full bg-[#00FFCC] hover:bg-[#00e6b8] text-black font-bold h-12 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(0,255,204,0.15)]"
+                    >
+                        <PlusCircle className="size-5 mr-2" />
+                        INITIALIZE TRANSFER
+                    </Button>
+                </Link>
             </CardContent>
         </Card>
     )
